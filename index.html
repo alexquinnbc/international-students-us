@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Minds, Bright Futures: Illuminating America</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient-start: #f0f8ff; /* AliceBlue */
+            --bg-gradient-end: #e6e6fa;   /* Lavender */
+            --text-color-primary: #333333;
+            --text-color-secondary: #555555;
+            --accent-primary: #ffc107;  /* Amber - Sunny Yellow */
+            --accent-secondary: #20c997; /* Teal */
+            --highlight-color: #fd7e14;  /* Bright Orange */
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            --card-border-hover: var(--accent-primary);
+            --font-display: 'Montserrat', sans-serif;
+            --font-body: 'Open Sans', sans-serif;
+
+            --animation-duration-fast: 0.3s;
+            --animation-duration-medium: 0.6s;
+            --animation-duration-slow: 1s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-color-primary);
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .main-container {
+            width: 100%;
+            overflow-y: auto;
+        }
+
+        .section {
+            min-height: 100vh;
+            padding: 80px 5%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity var(--animation-duration-slow) ease-out, transform var(--animation-duration-slow) ease-out;
+        }
+
+        .section.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--accent-primary);
+            position: relative;
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background-color: var(--accent-secondary);
+            border-radius: 2px;
+            transition: width var(--animation-duration-medium) ease-in-out;
+        }
+        .section.is-visible .section-title::after {
+            width: 120px;
+        }
+
+
+        .section-subtitle {
+            font-size: clamp(1rem, 2.2vw, 1.3rem);
+            margin-bottom: 40px;
+            max-width: 750px;
+            color: var(--text-color-secondary);
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity var(--animation-duration-medium) ease-out 0.3s, transform var(--animation-duration-medium) ease-out 0.3s;
+        }
+        .section.is-visible .section-subtitle {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(5px); /* Subtle glassmorphism */
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            text-align: left;
+            border: 2px solid transparent;
+            transition: transform var(--animation-duration-fast) ease-out, 
+                        box-shadow var(--animation-duration-fast) ease-out,
+                        border-color var(--animation-duration-fast) ease-out;
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+        }
+        .section.is-visible .info-card { /* Staggered animation handled by JS */
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .info-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+            border-color: var(--card-border-hover);
+        }
+
+        .info-card h3 {
+            font-family: var(--font-display);
+            color: var(--accent-secondary);
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+        .info-card p {
+            font-size: 0.95rem;
+            color: var(--text-color-secondary);
+            margin-bottom: 8px;
+        }
+        .info-card .stat {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--highlight-color);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Hero Section */
+        #hero .hero-main-title {
+            font-size: clamp(2.8rem, 7vw, 5rem);
+            font-weight: 900;
+            color: var(--text-color-primary);
+            margin-bottom: 15px;
+            line-height: 1.1;
+            letter-spacing: -1px;
+        }
+        #hero .hero-key-stats {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .hero-stat-item {
+            background: rgba(255,255,255,0.7);
+            padding: 15px 25px;
+            border-radius: 50px; /* Pill shape */
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color-primary);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            animation: popUp var(--animation-duration-medium) forwards;
+            cursor: default;
+        }
+        .hero-stat-item .value {
+            color: var(--highlight-color);
+            font-weight: 700;
+            font-size: 1.3em;
+        }
+        @keyframes popUp {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        #hero .hero-stat-item:nth-child(1) { animation-delay: 0.8s; }
+        #hero .hero-stat-item:nth-child(2) { animation-delay: 1s; }
+        #hero .hero-stat-item:nth-child(3) { animation-delay: 1.2s; }
+
+        .scroll-prompt {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: var(--text-color-secondary);
+            opacity: 0;
+            animation: fadeIn var(--animation-duration-slow) 2s forwards;
+        }
+        .scroll-prompt .arrow {
+            display: block;
+            margin: 5px auto 0;
+            width: 20px;
+            height: 20px;
+            border-left: 2px solid var(--accent-secondary);
+            border-bottom: 2px solid var(--accent-secondary);
+            transform: rotate(-45deg);
+            animation: bounceArrow 1.5s infinite;
+        }
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes bounceArrow {
+            0%, 100% { transform: translateY(0) rotate(-45deg); }
+            50% { transform: translateY(8px) rotate(-45deg); }
+        }
+
+        /* Economic Nourishment Section */
+        .spending-visual {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .spending-item {
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .section.is-visible .spending-item { opacity: 1; transform: translateY(0) scale(1); }
+        /* Stagger handled by JS */
+
+        .spending-icon {
+            width: 70px;
+            height: 70px;
+            background-color: var(--accent-primary);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: white;
+            margin: 0 auto 10px;
+            box-shadow: 0 4px 10px rgba(255, 193, 7, 0.4);
+            transition: transform var(--animation-duration-fast) ease;
+        }
+        .spending-item:hover .spending-icon {
+            transform: scale(1.15) rotate(10deg);
+        }
+        .spending-item h4 { color: var(--text-color-primary); margin-bottom: 5px; font-weight: 600; }
+        .spending-item p { font-size: 0.9em; color: var(--text-color-secondary); }
+
+        /* State Impact - Simplified for clarity, real map is complex */
+        .state-impact-container {
+            width: 100%; max-width: 800px;
+            padding: 20px; border-radius: 15px;
+            background: var(--card-bg); box-shadow: var(--card-shadow);
+            margin-top: 30px;
+        }
+        .state-list {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;
+        }
+        .state-tag {
+            background-color: var(--accent-secondary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color var(--animation-duration-fast), transform var(--animation-duration-fast);
+            box-shadow: 0 2px 5px rgba(32, 201, 151, 0.3);
+        }
+        .state-tag:hover {
+            background-color: var(--highlight-color);
+            transform: translateY(-3px);
+        }
+        #state-details-tooltip {
+            position: fixed; /* Use fixed for tooltip relative to viewport */
+            background-color: #fff;
+            color: var(--text-color-primary);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+            pointer-events: none;
+            z-index: 1000;
+            font-size: 0.9rem;
+            min-width: 200px;
+            transform: scale(0.95) translateY(10px);
+        }
+        #state-details-tooltip.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateY(0);
+        }
+        #state-details-tooltip strong { color: var(--accent-primary); }
+
+        /* Garden of Cultures */
+        .origins-map-placeholder { /* Simplified, conceptual */
+            width: 100%; max-width: 500px; height: 300px;
+            border: 2px dashed var(--accent-primary);
+            border-radius: 15px; margin: 30px auto;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--text-color-secondary);
+            font-style: italic;
+            background: rgba(255,193,7,0.05);
+        }
+        .country-highlight {
+            background: var(--highlight-color); color: white; padding: 5px 10px; border-radius: 5px;
+            margin: 5px; display: inline-block;
+        }
+
+        /* Cultivating Innovation (Fields of Study) */
+        .field-card { /* Re-using info-card style essentially */ }
+        .field-card.stem-field h3 { color: var(--highlight-color); } /* Emphasize STEM */
+        .field-card .percentage { font-weight: bold; color: var(--accent-primary); }
+
+        /* Harvest of Talent (Alumni) */
+        .alumni-showcase { /* Can use info-card structure */ }
+        .alumni-showcase img { /* If adding images */
+            width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
+            float: left; margin-right: 15px; border: 3px solid var(--accent-secondary);
+        }
+        .alumni-showcase .quote {
+            font-style: italic;
+            color: var(--text-color-secondary);
+            padding-left: 15px;
+            border-left: 3px solid var(--accent-primary);
+            margin-top: 10px;
+        }
+
+        /* Weeding the Garden (Challenges) */
+        #challenges .info-card { border-left: 5px solid var(--highlight-color); }
+        #challenges .info-card h3 { color: var(--highlight-color); }
+
+        /* Footer */
+        #footer {
+            min-height: auto;
+            padding: 40px 5%;
+            background: var(--bg-gradient-end); /* Match page end */
+            font-size: 0.9rem;
+            color: var(--text-color-secondary);
+            opacity: 1; transform: translateY(0); /* Always visible */
+        }
+        #footer p { margin-bottom: 5px; }
+        #footer a { color: var(--accent-secondary); text-decoration: none; font-weight: 600;}
+        #footer a:hover { text-decoration: underline; color: var(--highlight-color); }
+
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="main-container">
+        <section id="hero" class="section">
+            <h1 class="hero-main-title section-title">Global Minds, Bright Futures</h1>
+            <p class="section-subtitle">Discover how international students illuminate America with their contributions, talent, and diverse perspectives.</p>
+            <div class="hero-key-stats">
+                <div class="hero-stat-item"><span class="value" data-target="40.1">0</span>B Economic Boost (22-23)</div>
+                <div class="hero-stat-item"><span class="value" data-target="1.05" data-decimals="2">0</span>M+ Students (22-23)</div>
+                <div class="hero-stat-item"><span class="value" data-target="368">0</span>K Jobs Supported (22-23)</div>
+            </div>
+            <div class="scroll-prompt">Scroll to explore <span class="arrow"></span></div>
+        </section>
+
+        <section id="economic-nourishment" class="section">
+            <h2 class="section-title">Nourishing the Land</h2>
+            <p class="section-subtitle">Beyond tuition, international students' spending ripples through local economies, creating jobs and supporting communities.</p>
+            <div class="spending-visual">
+                <div class="spending-item">
+                    <div class="spending-icon">🎓</div>
+                    <h4>Tuition & Fees</h4>
+                    <p>Funds research & aid</p>
+                </div>
+                <div class="spending-item">
+                    <div class="spending-icon">🏠</div>
+                    <h4>Living Expenses</h4>
+                    <p>Rent, food, retail</p>
+                </div>
+                <div class="spending-item">
+                    <div class="spending-icon">🛍️</div>
+                    <h4>Local Businesses</h4>
+                    <p>Boosts shops & services</p>
+                </div>
+                <div class="spending-item">
+                    <div class="spending-icon">💼</div>
+                    <h4>Job Creation</h4>
+                    <p>Supports U.S. employment</p>
+                </div>
+            </div>
+            <div class="state-impact-container">
+                <h3>State Impact Highlights</h3>
+                <p>Click on a state to see its specific contribution (2022-2023 data).</p>
+                <div class="state-list">
+                    <span class="state-tag" data-state="California" data-students="138,393" data-contribution="$5.7 Billion" data-jobs="55,627">California</span>
+                    <span class="state-tag" data-state="New York" data-students="126,782" data-contribution="$5.0 Billion" data-jobs="48,369">New York</span>
+                    <span class="state-tag" data-state="Massachusetts" data-students="79,751" data-contribution="$3.5 Billion" data-jobs="33,451">Massachusetts</span>
+                    <span class="state-tag" data-state="Texas" data-students="75,568" data-contribution="$2.2 Billion" data-jobs="22,853">Texas</span>
+                    <span class="state-tag" data-state="Illinois" data-students="55,069" data-contribution="$1.9 Billion" data-jobs="18,847">Illinois</span>
+                </div>
+            </div>
+            <div id="state-details-tooltip">
+                <h4 id="tooltip-state-name"></h4>
+                <p>Students: <strong id="tooltip-state-students"></strong></p>
+                <p>Contribution: <strong id="tooltip-state-contribution"></strong></p>
+                <p>Jobs Supported: <strong id="tooltip-state-jobs"></strong></p>
+            </div>
+        </section>
+
+        <section id="garden-of-cultures" class="section">
+            <h2 class="section-title">A Garden of Cultures</h2>
+            <p class="section-subtitle">Students from across the globe bring a vibrant mix of perspectives, enriching campus life and fostering international understanding.</p>
+            <div class="origins-map-placeholder">
+                <span>Conceptual World Map Area: Highlighting <span class="country-highlight">China</span>, <span class="country-highlight">India</span>, <span class="country-highlight">S. Korea</span>, etc.</span>
+            </div>
+            <div class="content-grid" style="margin-top: 30px;">
+                <div class="info-card"><h3>Top Origins (22-23)</h3><p><span class="stat">1.</span> China (289,526)</p><p><span class="stat">2.</span> India (268,923)</p><p><span class="stat">3.</span> South Korea (43,847)</p></div>
+                <div class="info-card"><h3>Global Diversity</h3><p>International students come from over 200 countries and territories, creating a truly global learning environment in the U.S.</p></div>
+            </div>
+        </section>
+
+        <section id="cultivating-innovation" class="section">
+            <h2 class="section-title">Cultivating Innovation</h2>
+            <p class="section-subtitle">A significant number of international students pursue STEM fields, directly contributing to U.S. research, technology, and innovation.</p>
+            <div class="content-grid">
+                <div class="info-card field-card stem-field"><h3>Math & CompSci</h3><p><span class="percentage">24.0%</span> - Powering the digital age.</p></div>
+                <div class="info-card field-card stem-field"><h3>Engineering</h3><p><span class="percentage">20.2%</span> - Designing future solutions.</p></div>
+                <div class="info-card field-card"><h3>Business & Mgmt</h3><p><span class="percentage">15.5%</span> - Leading global strategies.</p></div>
+                <div class="info-card field-card stem-field"><h3>Physical & Life Sci</h3><p><span class="percentage">7.8%</span> - Advancing scientific discovery.</p></div>
+            </div>
+            <p style="margin-top:30px; font-size: 1.2em; font-weight: 600; color: var(--highlight-color);">Over 55% of international students enroll in vital STEM programs.</p>
+        </section>
+
+        <section id="harvest-of-talent" class="section">
+            <h2 class="section-title">The Harvest of Talent</h2>
+            <p class="section-subtitle">Many international alumni become successful entrepreneurs and leaders, launching innovative companies and creating American jobs.</p>
+            <div class="content-grid">
+                <div class="info-card alumni-showcase">
+                    <!-- Add img tag here if you have an image -->
+                    <h3>Shahid Khan</h3>
+                    <p>From Pakistan (U. Illinois). Founder of Flex-N-Gate, owner of Jacksonville Jaguars. Created thousands of U.S. jobs.</p>
+                </div>
+                <div class="info-card alumni-showcase">
+                    <h3>Satya Nadella</h3>
+                    <p>From India (U. Wisconsin-Milwaukee, U. Chicago). CEO of Microsoft, leading one of the world's most influential tech companies.</p>
+                </div>
+                 <div class="info-card alumni-showcase">
+                    <h3>Founders of Unicorns</h3>
+                    <p class="quote">"More than half (55%) of America’s $1 billion startup companies have at least one immigrant founder, many of whom first came as students." - NFAP, 2022</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="challenges" class="section">
+            <h2 class="section-title">Ensuring Fertile Ground</h2>
+            <p class="section-subtitle">To continue benefiting from this global talent, the U.S. must address challenges like competition, visa processes, and overall perception.</p>
+            <div class="content-grid">
+                <div class="info-card"><h3>Global Competition</h3><p>Other nations are actively attracting students with favorable policies.</p></div>
+                <div class="info-card"><h3>Visa & Immigration</h3><p>Complex processes can be a deterrent for prospective students.</p></div>
+                <div class="info-card"><h3>Welcoming Environment</h3><p>Maintaining a reputation as an open and inviting destination is key.</p></div>
+            </div>
+        </section>
+
+        <footer id="footer">
+            <p>This interactive report celebrates the invaluable contributions of international students to the United States.</p>
+            <p>Data sourced from NAFSA, IIE Open Doors, NFAP. Design & Development: AI-Powered Experience.</p>
+            <p><a href="#hero">Back to Top</a> | Content based on augmented research.</p>
+        </footer>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Canvas 2D Particle System ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particlesArray = [];
+        const numParticles = 70; // Fewer for a softer effect
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const mouse = { x: undefined, y: undefined, radius: 100 };
+        canvas.addEventListener('mousemove', (event) => { // Listen on canvas for mouse, or window
+            mouse.x = event.clientX;
+            mouse.y = event.clientY;
+        });
+        canvas.addEventListener('mouseleave', () => { // Or window.onmouseout
+            mouse.x = undefined;
+            mouse.y = undefined;
+        });
+
+        class Particle {
+            constructor(x, y, size, color, weight) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                this.weight = weight; // How much it's affected by mouse
+                this.baseX = this.x;
+                this.baseY = this.y;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+            update() {
+                // Gentle drift
+                this.x += (Math.random() - 0.5) * 0.3;
+                this.y += (Math.random() - 0.5) * 0.3;
+
+                // Boundary check (simple wrap around)
+                if (this.x > canvas.width + this.size) this.x = -this.size;
+                if (this.x < -this.size) this.x = canvas.width + this.size;
+                if (this.y > canvas.height + this.size) this.y = -this.size;
+                if (this.y < -this.size) this.y = canvas.height + this.size;
+
+
+                // Mouse interaction - repel
+                if (mouse.x !== undefined && mouse.y !== undefined) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < mouse.radius + this.size) {
+                        if (distance < 1) distance = 1; // Avoid division by zero
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (mouse.radius - distance) / mouse.radius; // Stronger when closer
+                        const directionX = forceDirectionX * force * this.weight * 2; // Increased repulsion
+                        const directionY = forceDirectionY * force * this.weight * 2;
+                        this.x -= directionX;
+                        this.y -= directionY;
+                    }
+                }
+                 // Slowly return to a drift if mouse is far, or no mouse interaction
+                if (this.x !== this.baseX && (mouse.x === undefined || distance >= mouse.radius + this.size)) {
+                     let dxReturn = this.x - this.baseX;
+                     this.x -= dxReturn / 50; // Slow return
+                }
+                if (this.y !== this.baseY && (mouse.y === undefined || distance >= mouse.radius + this.size)) {
+                     let dyReturn = this.y - this.baseY;
+                     this.y -= dyReturn / 50; // Slow return
+                }
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            const colors = ['rgba(255,193,7,0.5)', 'rgba(32,201,151,0.5)', 'rgba(253,126,20,0.4)']; // Amber, Teal, Orange - with alpha
+            for (let i = 0; i < numParticles; i++) {
+                let size = Math.random() * 2.5 + 1; // Smaller, softer particles
+                let x = Math.random() * canvas.width;
+                let y = Math.random() * canvas.height;
+                let color = colors[Math.floor(Math.random() * colors.length)];
+                let weight = Math.random() * 0.5 + 0.1; // Random weight for varied interaction
+                particlesArray.push(new Particle(x, y, size, color, weight));
+            }
+        }
+        initParticles();
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // --- General Site Logic ---
+        const sections = document.querySelectorAll('.section');
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+
+        const sectionObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    
+                    // Staggered animation for info-cards or other elements
+                    const animatedElements = entry.target.querySelectorAll('.info-card, .spending-item, .hero-stat-item');
+                    animatedElements.forEach((el, index) => {
+                        el.style.transitionDelay = `${index * 0.1}s`;
+                    });
+
+                    if (entry.target.id === 'hero') {
+                        animateHeroNumbers();
+                    }
+                    // observer.unobserve(entry.target); // Animate only once
+                } else {
+                    // Optional: remove 'is-visible' for re-animation on scroll up
+                    // entry.target.classList.remove('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => sectionObserver.observe(section));
+
+        // Animate numbers
+        function animateHeroNumbers() {
+            const valueElements = document.querySelectorAll('#hero .hero-stat-item .value');
+            valueElements.forEach(el => {
+                if (el.classList.contains('animated')) return;
+                el.classList.add('animated');
+
+                const target = parseFloat(el.dataset.target);
+                const decimals = parseInt(el.dataset.decimals) || 0;
+                let current = 0;
+                const duration = 1500; // ms
+                const steps = 60; // Number of animation steps
+                const increment = target / steps;
+                const stepDuration = duration / steps;
+
+                let stepCount = 0;
+                const timer = setInterval(() => {
+                    current += increment;
+                    stepCount++;
+                    if (stepCount >= steps || current >= target) {
+                        clearInterval(timer);
+                        current = target;
+                    }
+                    el.textContent = current.toFixed(decimals);
+                }, stepDuration);
+            });
+        }
+
+        // State Tooltip Logic
+        const stateTags = document.querySelectorAll('.state-tag');
+        const tooltip = document.getElementById('state-details-tooltip');
+        const ttStateName = document.getElementById('tooltip-state-name');
+        const ttStateStudents = document.getElementById('tooltip-state-students');
+        const ttStateContribution = document.getElementById('tooltip-state-contribution');
+        const ttStateJobs = document.getElementById('tooltip-state-jobs');
+
+        stateTags.forEach(tag => {
+            tag.addEventListener('mousemove', (e) => {
+                ttStateName.textContent = tag.dataset.state;
+                ttStateStudents.textContent = tag.dataset.students;
+                ttStateContribution.textContent = tag.dataset.contribution;
+                ttStateJobs.textContent = tag.dataset.jobs;
+                
+                // Position tooltip
+                let x = e.clientX + 15;
+                let y = e.clientY + 15;
+                if (x + tooltip.offsetWidth > window.innerWidth - 20) {
+                    x = e.clientX - tooltip.offsetWidth - 15;
+                }
+                if (y + tooltip.offsetHeight > window.innerHeight - 20) {
+                    y = e.clientY - tooltip.offsetHeight - 15;
+                }
+                tooltip.style.left = `${x}px`;
+                tooltip.style.top = `${y}px`;
+                
+                tooltip.classList.add('visible');
+            });
+            tag.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
+        });
+        
+        // --- Web Audio API (Simple click sound) ---
+        let audioCtx;
+        const sounds = {};
+
+        function initAudio() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                sounds.click = () => {
+                    if (!audioCtx) return;
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(660, audioCtx.currentTime); // E5
+                    gainNode.gain.setValueAtTime(0.03, audioCtx.currentTime); // Softer
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.15);
+                };
+            } catch(e) { console.warn('Web Audio API not supported.'); }
+        }
+        initAudio();
+
+        function playSound(soundName) {
+            if (audioCtx && sounds[soundName]) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                sounds[soundName]();
+            }
+        }
+        // Example: add to stateTag event listeners: playSound('click');
+        stateTags.forEach(tag => tag.addEventListener('click', () => playSound('click')));
+
+
+        // Smooth scroll for anchor links (e.g., Back to Top)
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+    });
+    </script>
+</body>
+</html>
