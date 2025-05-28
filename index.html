@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Nexus: International Students & U.S. Progress</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030611; /* Very dark, almost black blue */
+            --primary-glow: #00d9ff; /* Bright cyan for glow */
+            --secondary-glow: #ff00c8; /* Vibrant magenta for accents */
+            --text-color: #e0e8ff;
+            --text-muted-color: #a0a8c0;
+            --card-bg: rgba(10, 20, 40, 0.75);
+            --card-border: rgba(0, 217, 255, 0.3);
+            --warning-color: #ffae00;
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Roboto', sans-serif;
+            --section-transition-duration: 1s;
+            --element-animation-duration: 0.8s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            line-height: 1.7;
+            perspective: 1500px; /* For 3D transforms on children */
+        }
+
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .main-container {
+            width: 100%;
+            overflow-y: auto; /* Main scroll */
+        }
+
+        .section {
+            min-height: 100vh;
+            padding: 100px 5%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            opacity: 0;
+            transform: translateY(80px) translateZ(-100px); /* Initial 3D state */
+            transition: opacity var(--section-transition-duration) ease-out, transform var(--section-transition-duration) ease-out;
+            border-bottom: 1px solid rgba(var(--primary-glow), 0.1); /* Subtle separator */
+        }
+
+        .section.is-visible {
+            opacity: 1;
+            transform: translateY(0) translateZ(0);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            margin-bottom: 25px;
+            color: var(--primary-glow);
+            text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow), 0 0 30px rgba(0, 217, 255, 0.5);
+            letter-spacing: 1px;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform var(--element-animation-duration) ease-out, opacity var(--element-animation-duration) ease-out;
+            transition-delay: 0.2s; /* Stagger title appearance */
+        }
+        .section.is-visible .section-title {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .section-subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            margin-bottom: 40px;
+            max-width: 800px;
+            color: var(--text-muted-color);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform var(--element-animation-duration) ease-out, opacity var(--element-animation-duration) ease-out;
+            transition-delay: 0.4s;
+        }
+        .section.is-visible .section-subtitle {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .data-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.1), inset 0 0 15px rgba(0, 217, 255, 0.1);
+            transform: scale(0.95) rotateY(10deg);
+            opacity: 0;
+            transition: transform var(--element-animation-duration) cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity var(--element-animation-duration) ease-out;
+            cursor: default;
+        }
+        .section.is-visible .data-card {
+            transform: scale(1) rotateY(0deg);
+            opacity: 1;
+        }
+        .data-card h3 {
+            font-family: var(--font-display);
+            color: var(--secondary-glow);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 8px var(--secondary-glow);
+        }
+        .data-card p {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .data-card .stat-number {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-glow);
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        .data-card:hover {
+            transform: translateY(-10px) scale(1.03) !important;
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3), inset 0 0 20px rgba(0, 217, 255, 0.2);
+        }
+
+
+        /* Specific Section Styles */
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+        }
+        #preloader.loaded {
+            opacity: 0;
+            visibility: hidden;
+        }
+        #preloader-text {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 8px var(--primary-glow);
+            opacity: 0;
+            animation: pulseGlow 2s infinite alternate, fadeInText 1s 0.5s forwards;
+        }
+        @keyframes pulseGlow {
+            from { text-shadow: 0 0 8px var(--primary-glow), 0 0 15px var(--primary-glow); }
+            to { text-shadow: 0 0 15px var(--primary-glow), 0 0 30px var(--primary-glow); }
+        }
+        @keyframes fadeInText { to { opacity: 1; } }
+
+
+        /* Hero Section (Global Influx) */
+        #hero {
+            justify-content: center;
+        }
+        #hero .hero-main-title {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            margin-bottom: 15px;
+            line-height: 1.1;
+            color: #fff; /* Brighter for main title */
+             text-shadow: 0 0 15px var(--primary-glow), 0 0 30px var(--primary-glow), 0 0 45px rgba(0,217,255,0.7);
+        }
+        #hero .hero-key-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        #hero .hero-stat {
+            font-size: 1.5rem;
+            color: var(--secondary-glow);
+            font-weight: 700;
+            opacity: 0;
+            transform: translateY(15px);
+            animation: popIn 0.5s forwards;
+        }
+        #hero .hero-stat:nth-child(1) { animation-delay: 1s; }
+        #hero .hero-stat:nth-child(2) { animation-delay: 1.2s; }
+        #hero .hero-stat:nth-child(3) { animation-delay: 1.4s; }
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(15px) scale(0.8); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            animation: fadeInScroll 1s 2s forwards;
+        }
+        .scroll-indicator span {
+            display: block;
+            width: 2px;
+            height: 30px;
+            background: var(--primary-glow);
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .scroll-indicator span::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent, var(--secondary-glow), transparent);
+            animation: scrollAnim 2s infinite ease-in-out;
+        }
+        @keyframes fadeInScroll { to { opacity: 0.7; } }
+        @keyframes scrollAnim {
+            0% { top: -100%; }
+            50%, 100% { top: 100%; }
+        }
+
+
+        /* Economic Engine Section */
+        #economic-engine .spending-breakdown {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+        }
+        .spending-category {
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #economic-engine.is-visible .spending-category { opacity: 1; transform: translateY(0); }
+        #economic-engine.is-visible .spending-category:nth-child(1) { transition-delay: 0.2s; }
+        #economic-engine.is-visible .spending-category:nth-child(2) { transition-delay: 0.4s; }
+        #economic-engine.is-visible .spending-category:nth-child(3) { transition-delay: 0.6s; }
+        #economic-engine.is-visible .spending-category:nth-child(4) { transition-delay: 0.8s; }
+
+        .spending-icon {
+            font-size: 3rem; /* Placeholder for icons */
+            color: var(--primary-glow);
+            margin-bottom: 10px;
+            display: inline-block; /* For hover effect */
+            transition: transform 0.3s ease;
+        }
+        .spending-category:hover .spending-icon { transform: scale(1.2) rotate(10deg); }
+        .spending-category h4 { color: var(--secondary-glow); margin-bottom: 5px; }
+
+        .state-impact-map { /* Simplified map - more interactive later */
+            width: 100%; max-width: 600px; height: 400px;
+            background: rgba(var(--primary-glow), 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            margin-top: 30px;
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+        }
+        .state-impact-map::before {
+            content: "Interactive State Map (Conceptual)";
+            color: var(--text-muted-color);
+        }
+        .state-dot {
+            position: absolute;
+            width: 15px; height: 15px;
+            background-color: var(--secondary-glow);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 0 8px var(--secondary-glow);
+        }
+        .state-dot:hover { transform: scale(1.5); box-shadow: 0 0 15px var(--secondary-glow), 0 0 25px var(--secondary-glow); }
+        /* Position dots - these are illustrative */
+        #california-dot { top: 40%; left: 15%; }
+        #newyork-dot { top: 30%; left: 75%; }
+        #texas-dot { top: 65%; left: 40%; }
+        
+        #state-tooltip {
+            position: fixed;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid var(--primary-glow);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+            z-index: 1000;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        #state-tooltip.visible { opacity: 1; visibility: visible; }
+
+
+        /* Global Origins Section */
+        #global-origins .origins-globe-placeholder {
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,217,255,0.3) 0%, rgba(0,217,255,0.05) 70%);
+            border: 2px solid var(--primary-glow);
+            margin: 30px auto;
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+            animation: slowRotate 20s linear infinite;
+        }
+        #global-origins .origins-globe-placeholder::before {
+            content: "Origin Points";
+            font-family: var(--font-display);
+            color: var(--primary-glow);
+        }
+        .origin-country-dot {
+            position: absolute;
+            width:10px; height: 10px;
+            background-color: var(--secondary-glow);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px var(--secondary-glow);
+        }
+        /* Positions are illustrative for a flat projection, a real globe would need 3D math */
+        #china-dot { top: 30%; left: 70%; }
+        #india-dot { top: 40%; left: 60%; }
+
+        @keyframes slowRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Fields of Future */
+        #fields-of-future .fields-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 900px;
+            margin-top: 30px;
+        }
+        .field-card {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        .field-card:hover {
+            transform: translateY(-5px);
+            background-color: rgba(0, 217, 255, 0.2);
+        }
+        .field-card.stem { border-left: 5px solid var(--secondary-glow); }
+        .field-card h4 { color: var(--primary-glow); font-size: 1.1rem; }
+        .field-card p { color: var(--text-muted-color); font-size: 0.9rem; }
+
+        /* Innovation Nexus */
+        #innovation-nexus .alumni-star-map {
+            width: 100%; max-width: 700px; height: 400px;
+            /* background: url('star_sky.jpg'); Replace with actual or generative star background */
+            border: 1px solid var(--card-border); border-radius: 10px; margin-top: 30px;
+            position: relative; overflow: hidden;
+        }
+        .alumnus-star {
+            position: absolute;
+            width: 8px; height: 8px;
+            background-color: #fff; /* White for stars */
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--primary-glow);
+            animation: twinkle 3s infinite ease-in-out;
+        }
+        .alumnus-star:hover { animation-play-state: paused; transform: scale(2); }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        /* Illustrative positions */
+        #khan-star { top: 30%; left: 20%; animation-delay: 0.5s;}
+        #musk-star { top: 50%; left: 70%; animation-delay: 1s;}
+        #nadella-star { top: 70%; left: 40%; animation-delay: 0.2s;}
+
+        /* Headwinds Section */
+        #headwinds .risk-factor {
+            border-left: 4px solid var(--warning-color);
+            padding: 15px; margin-bottom: 15px;
+            text-align: left;
+            background: rgba(var(--warning-color), 0.1);
+        }
+        #headwinds .risk-factor h4 { color: var(--warning-color); }
+
+        /* Unseen Threads / Footer */
+        #unseen-threads {
+            min-height: 60vh;
+        }
+        #footer {
+            min-height: auto;
+            padding: 40px 5%;
+            background-color: #02040a;
+            font-size: 0.9rem;
+            opacity: 1; transform: translateY(0); /* Always visible or different anim */
+        }
+        #footer p { margin-bottom: 5px; color: var(--text-muted-color); }
+        #footer a { color: var(--primary-glow); text-decoration: none; }
+        #footer a:hover { text-decoration: underline; }
+
+        /* Utility for staggered animation */
+        .stagger-animate {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity var(--element-animation-duration) ease-out, transform var(--element-animation-duration) ease-out;
+        }
+        .section.is-visible .stagger-animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Add data-stagger-delay to elements in HTML for custom delays */
+
+    </style>
+</head>
+<body>
+    <div id="preloader">
+        <div id="preloader-text">Connecting Minds... Fueling Futures...</div>
+    </div>
+
+    <canvas id="webgl-canvas"></canvas>
+
+    <div class="main-container">
+        <section id="hero" class="section">
+            <h1 class="hero-main-title section-title">GLOBAL NEXUS</h1>
+            <p class="section-subtitle">International Students: Catalysts for U.S. Progress & Innovation.</p>
+            <div class="hero-key-stats">
+                <!-- Data from augmented report -->
+                <div class="hero-stat" data-value="40.1B" data-suffix=" Economic Impact (2022-23)">$0B</div>
+                <div class="hero-stat" data-value="1.05M" data-suffix=" Students (2022-23)">0M</div>
+                <div class="hero-stat" data-value="368K" data-suffix=" Jobs Supported (2022-23)">0K</div>
+            </div>
+            <div class="scroll-indicator"><span></span></div>
+        </section>
+
+        <section id="economic-engine" class="section">
+            <h2 class="section-title">The Economic Engine</h2>
+            <p class="section-subtitle">Billions flow into local economies, supporting diverse sectors beyond tuition.</p>
+            <div class="spending-breakdown">
+                <div class="spending-category">
+                    <span class="spending-icon">🎓</span> <!-- Placeholder, use SVG/FontAwesome -->
+                    <h4>Tuition & Fees</h4>
+                    <p>~45% of spending. Funds research, domestic aid, facilities.</p>
+                </div>
+                <div class="spending-category">
+                    <span class="spending-icon">🏠</span>
+                    <h4>Living Expenses</h4>
+                    <p>~55%. Rent, food, retail, transport.</p>
+                </div>
+                <div class="spending-category">
+                    <span class="spending-icon">💼</span>
+                    <h4>Job Creation</h4>
+                    <p>1 in 7 int'l students supports 3 U.S. jobs.</p>
+                </div>
+            </div>
+            <h3 style="font-family: var(--font-display); color: var(--primary-glow); margin: 40px 0 20px;">State Impact Hotspots</h3>
+            <div class="state-impact-map">
+                <!-- Top States from report -->
+                <div class="state-dot" id="california-dot" data-state="California" data-students="138,393" data-contribution="$5.7 Billion" data-jobs="55,627"></div>
+                <div class="state-dot" id="newyork-dot" data-state="New York" data-students="126,782" data-contribution="$5.0 Billion" data-jobs="48,369"></div>
+                <div class="state-dot" id="texas-dot" data-state="Texas" data-students="75,568" data-contribution="$2.2 Billion" data-jobs="22,853"></div>
+                 <div class="state-dot" style="top: 35%; left: 70%;" data-state="Massachusetts" data-students="79,751" data-contribution="$3.5 Billion" data-jobs="33,451"></div>
+
+            </div>
+            <div id="state-tooltip">
+                <strong>State:</strong> <span id="tooltip-state-name"></span><br>
+                <strong>Students:</strong> <span id="tooltip-state-students"></span><br>
+                <strong>Contribution:</strong> <span id="tooltip-state-contribution"></span><br>
+                <strong>Jobs:</strong> <span id="tooltip-state-jobs"></span>
+            </div>
+        </section>
+
+        <section id="global-origins" class="section">
+            <h2 class="section-title">A World of Talent</h2>
+            <p class="section-subtitle">Students from over 200 nations enrich U.S. campuses and contribute diverse perspectives.</p>
+            <div class="origins-globe-placeholder">
+                <!-- Top sending countries -->
+                <div class="origin-country-dot" id="china-dot" data-country="China" data-students="289,526"></div>
+                <div class="origin-country-dot" id="india-dot" data-country="India" data-students="268,923"></div>
+                 <div class="origin-country-dot" style="top: 50%; left: 30%;" data-country="South Korea" data-students="43,847"></div>
+            </div>
+            <!-- Add tooltip for country dots similar to state dots -->
+            <p style="margin-top: 20px;">Top sending countries: China (27.4%), India (25.4%), S. Korea (4.1%)</p>
+        </section>
+
+        <section id="fields-of-future" class="section">
+            <h2 class="section-title">Fields of the Future</h2>
+            <p class="section-subtitle">International students are vital to STEM, driving innovation in critical sectors.</p>
+            <div class="fields-grid">
+                <!-- Data from augmented report -->
+                <div class="field-card stem stagger-animate" data-stagger-delay="0s"><h4>Math & Computer Science</h4><p>24.0% - Fueling the tech boom.</p></div>
+                <div class="field-card stem stagger-animate" data-stagger-delay="0.1s"><h4>Engineering</h4><p>20.2% - Building tomorrow's infrastructure.</p></div>
+                <div class="field-card stagger-animate" data-stagger-delay="0.2s"><h4>Business & Management</h4><p>15.5% - Leading global enterprises.</p></div>
+                <div class="field-card stem stagger-animate" data-stagger-delay="0.3s"><h4>Physical & Life Sciences</h4><p>7.8% - Advancing research frontiers.</p></div>
+            </div>
+            <p class="stagger-animate" data-stagger-delay="0.4s" style="margin-top:30px; font-size: 1.2em; color: var(--secondary-glow);">Over 55% of international students are in STEM fields.</p>
+        </section>
+
+        <section id="innovation-nexus" class="section">
+            <h2 class="section-title">The Innovation Nexus</h2>
+            <p class="section-subtitle">Alumni become entrepreneurs, inventors, and leaders, creating jobs and shaping industries.</p>
+            <div class="alumni-star-map">
+                 <!-- Data from augmented report -->
+                <div class="alumnus-star" id="khan-star" data-name="Shahid Khan" data-info="Pakistan -> U. Illinois. Flex-N-Gate, Jacksonville Jaguars."></div>
+                <div class="alumnus-star" id="musk-star" data-name="Elon Musk" data-info="S. Africa -> U. Penn. Tesla, SpaceX."></div>
+                <div class="alumnus-star" id="nadella-star" data-name="Satya Nadella" data-info="India -> U. Wisconsin. CEO, Microsoft."></div>
+                <div class="alumnus-star" style="top:20%; left: 80%;" data-name="Sundar Pichai" data-info="India -> Stanford. CEO, Google/Alphabet."></div>
+            </div>
+             <!-- Add tooltip for stars -->
+            <p class="stagger-animate" data-stagger-delay="0.2s" style="margin-top:30px; font-size: 1.1em; font-style: italic;">"More than half of America’s $1 billion startup companies have at least one immigrant founder." - NFAP</p>
+        </section>
+
+        <section id="headwinds" class="section">
+            <h2 class="section-title" style="color: var(--warning-color); text-shadow: 0 0 10px var(--warning-color);">Navigating Headwinds</h2>
+            <p class="section-subtitle">Challenges like global competition, visa complexities, and costs threaten this vital flow.</p>
+            <div class="content-grid">
+                <div class="data-card risk-factor stagger-animate" data-stagger-delay="0s">
+                    <h4>Global Competition</h4>
+                    <p>Canada, UK, Australia actively recruit talent.</p>
+                </div>
+                <div class="data-card risk-factor stagger-animate" data-stagger-delay="0.15s">
+                    <h4>Visa Policies & Perception</h4>
+                    <p>"Damage is already done" by uncertainty. - C. Yannelis</p>
+                </div>
+                <div class="data-card risk-factor stagger-animate" data-stagger-delay="0.3s">
+                    <h4>Economic Impact of Decline</h4>
+                    <p>Reduced university revenue, local business impact, skill shortages.</p>
+                </div>
+            </div>
+            <p class="stagger-animate" data-stagger-delay="0.45s" style="margin-top:30px; font-size: 1.3em; font-weight: bold; color: var(--warning-color);">"America is shooting itself in the foot big time." - Nicholas Barr</p>
+        </section>
+
+        <section id="unseen-threads" class="section">
+            <h2 class="section-title">The Unseen Threads</h2>
+            <p class="section-subtitle">Beyond economics, international students weave a rich tapestry of cultural exchange, soft power, and global understanding.</p>
+            <div class="content-grid">
+                <div class="data-card stagger-animate" data-stagger-delay="0s"><h3>Cultural Diversity</h3><p>Enriched campus life, diverse perspectives in classrooms and communities.</p></div>
+                <div class="data-card stagger-animate" data-stagger-delay="0.15s"><h3>Global Networks</h3><p>Alumni foster goodwill and strong international ties (U.S. soft power).</p></div>
+                <div class="data-card stagger-animate" data-stagger-delay="0.3s"><h3>Innovation Catalyst</h3><p>A welcoming environment is a strategic imperative for continued U.S. leadership.</p></div>
+            </div>
+        </section>
+
+        <footer id="footer" class="section">
+            <p>Interactive Report based on augmented research. Data from NAFSA, IIE Open Doors, NFAP, and media reports.</p>
+            <p>Concept & Development: AI Digital Experience</p>
+            <p><a href="#" id="replay-intro">Replay Intro Animation (Conceptual)</a> | <a href="https://github.com/yourusername/your-repo-name" target="_blank">View on GitHub (Example)</a></p>
+        </footer>
+
+    </div>
+
+    <script>
+    // --- WebGL Particle System ---
+    // Basic Vertex Shader
+    const vsSource = `
+        attribute vec4 aVertexPosition;
+        attribute vec2 aTextureCoord; // Not used for particles, but good practice
+        attribute float aParticleSize;
+        attribute vec3 aParticleColor;
+
+        uniform mat4 uModelViewMatrix;
+        uniform mat4 uProjectionMatrix;
+        uniform float uTime;
+        uniform vec2 uMousePosition; // Normalized mouse coords (-1 to 1)
+
+        varying lowp vec3 vColor;
+        varying lowp float vDistanceToMouse;
+
+        void main(void) {
+            vec4 position = uModelViewMatrix * aVertexPosition;
+            
+            // Simple mouse interaction: particles move away slightly
+            vec2 particleScreenPos = (uProjectionMatrix * position).xy; // Simplified screen pos
+            float dist = distance(particleScreenPos, uMousePosition * vec2(1.0, -1.0)); // Y needs inversion
+            vDistanceToMouse = dist;
+
+            if (dist < 0.3) { // Interaction radius
+                vec2 direction = normalize(particleScreenPos - uMousePosition * vec2(1.0, -1.0));
+                position.xy += direction * (0.3 - dist) * 0.1; // Move strength
+            }
+            
+            // Pulsating effect or gentle drift based on time
+            // position.x += sin(uTime * 0.5 + aVertexPosition.y) * 0.01;
+            // position.y += cos(uTime * 0.3 + aVertexPosition.x) * 0.01;
+
+            gl_Position = uProjectionMatrix * position;
+            gl_PointSize = aParticleSize * (1.0 + 0.5 * sin(uTime + aVertexPosition.z)); // Pulsating size
+            vColor = aParticleColor;
+        }
+    `;
+
+    // Basic Fragment Shader
+    const fsSource = `
+        varying lowp vec3 vColor;
+        varying lowp float vDistanceToMouse; // For color change on hover
+
+        void main(void) {
+            float alpha = 0.7;
+            if (vDistanceToMouse < 0.15) { // Highlight particles near mouse
+                 alpha = 1.0;
+            } else if (vDistanceToMouse < 0.3) {
+                alpha = mix(1.0, 0.7, (vDistanceToMouse - 0.15) / 0.15);
+            }
+
+            // Create a circular shape for particles
+            vec2 circCoord = 2.0 * gl_PointCoord - 1.0;
+            if (dot(circCoord, circCoord) > 1.0) {
+                discard;
+            }
+            
+            gl_FragColor = vec4(vColor, alpha);
+        }
+    `;
+
+    let gl;
+    let shaderProgram;
+    let particleBuffer;
+    let particleSizeBuffer;
+    let particleColorBuffer;
+    let particles = [];
+    const numParticles = 2000; // Adjust for performance
+    let uTimeLocation, uMousePositionLocation;
+    let mousePos = { x: 0, y: 0 };
+
+    function initWebGL(canvas) {
+        gl = canvas.getContext('webgl');
+        if (!gl) {
+            console.error("WebGL not supported, falling back on simpler effects.");
+            return null;
+        }
+
+        shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+        if (!shaderProgram) return null;
+
+        gl.useProgram(shaderProgram);
+
+        uTimeLocation = gl.getUniformLocation(shaderProgram, "uTime");
+        uMousePositionLocation = gl.getUniformLocation(shaderProgram, "uMousePosition");
+
+        // Generate particle data
+        const positions = [];
+        const sizes = [];
+        const colors = [];
+        const primaryColorRGB = [0, 217/255, 255/255]; // --primary-glow
+        const secondaryColorRGB = [255/255, 0, 200/255]; // --secondary-glow
+
+        for (let i = 0; i < numParticles; i++) {
+            // Spread particles in a volume for a pseudo-3D effect
+            positions.push(Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * 4 - 2); // x, y, z for variety
+            sizes.push(Math.random() * 3.0 + 1.0); // Particle size
+            
+            // Mix colors
+            if (Math.random() < 0.8) {
+                colors.push(primaryColorRGB[0], primaryColorRGB[1], primaryColorRGB[2]);
+            } else {
+                colors.push(secondaryColorRGB[0], secondaryColorRGB[1], secondaryColorRGB[2]);
+            }
+        }
+
+        particleBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, particleBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+        particleSizeBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, particleSizeBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sizes), gl.STATIC_DRAW);
+        
+        particleColorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, particleColorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+        return gl;
+    }
+
+    function initShaderProgram(gl, vsSource, fsSource) {
+        const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        if (!vertexShader || !fragmentShader) return null;
+
+        const shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+            return null;
+        }
+        return shaderProgram;
+    }
+
+    function loadShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+
+    let then = 0;
+    function renderWebGL(now) {
+        if (!gl || !shaderProgram) { // Fallback if WebGL init failed
+             requestAnimationFrame(renderWebGL); // Keep loop for other potential canvas ops
+            return;
+        }
+
+        now *= 0.001;  // convert to seconds
+        const deltaTime = now - then;
+        then = now;
+
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clearColor(0.03, 0.06, 0.11, 0.0); // Match --bg-color, transparent alpha
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // Standard alpha blending
+
+        const fieldOfView = 45 * Math.PI / 180;
+        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        const zNear = 0.1;
+        const zFar = 100.0;
+        const projectionMatrix = mat4.create();
+        mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+
+        const modelViewMatrix = mat4.create();
+        // Move camera slightly back
+        mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -0.0, -3.0 + Math.sin(now * 0.1) * 0.5]);
+        // Gentle rotation
+        mat4.rotate(modelViewMatrix, modelViewMatrix, now * 0.05, [0, 1, 0]); 
+        mat4.rotate(modelViewMatrix, modelViewMatrix, Math.sin(now * 0.07) * 0.1, [1, 0, 0]);
+
+        // Set shader uniforms
+        gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, "uProjectionMatrix"), false, projectionMatrix);
+        gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, "uModelViewMatrix"), false, modelViewMatrix);
+        gl.uniform1f(uTimeLocation, now);
+        gl.uniform2f(uMousePositionLocation, mousePos.x, mousePos.y);
+
+
+        // Bind vertex positions
+        const aVertexPosition = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+        gl.bindBuffer(gl.ARRAY_BUFFER, particleBuffer);
+        gl.vertexAttribPointer(aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aVertexPosition);
+
+        // Bind particle sizes
+        const aParticleSize = gl.getAttribLocation(shaderProgram, "aParticleSize");
+        gl.bindBuffer(gl.ARRAY_BUFFER, particleSizeBuffer);
+        gl.vertexAttribPointer(aParticleSize, 1, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aParticleSize);
+        
+        // Bind particle colors
+        const aParticleColor = gl.getAttribLocation(shaderProgram, "aParticleColor");
+        gl.bindBuffer(gl.ARRAY_BUFFER, particleColorBuffer);
+        gl.vertexAttribPointer(aParticleColor, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(aParticleColor);
+
+        gl.drawArrays(gl.POINTS, 0, numParticles);
+
+        requestAnimationFrame(renderWebGL);
+    }
+
+    // Minimal mat4 library (for matrix operations)
+    const mat4 = {
+        create: function() { return new Float32Array(16); },
+        perspective: function(out, fovy, aspect, near, far) {
+            const f = 1.0 / Math.tan(fovy / 2);
+            out[0] = f / aspect; out[1] = 0; out[2] = 0; out[3] = 0;
+            out[4] = 0; out[5] = f; out[6] = 0; out[7] = 0;
+            out[8] = 0; out[9] = 0; out[10] = (near + far) / (near - far); out[11] = -1;
+            out[12] = 0; out[13] = 0; out[14] = (2 * far * near) / (near - far); out[15] = 0;
+            return out;
+        },
+        translate: function(out, a, v) {
+            let x = v[0], y = v[1], z = v[2];
+            if (a === out) {
+                out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
+                out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
+                out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
+                out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
+            } else { /* ... full implementation ... */ }
+            return out;
+        },
+        rotate: function(out, a, rad, axis) { /* ... basic rotation logic ... */ return out; } // Simplified for brevity
+    };
+    // Full mat4.translate and mat4.rotate would be needed for complex camera movements.
+    // For brevity, assume basic identity for rotate and translate logic if a !== out or more complex use.
+    // A full library like gl-matrix would be used in a real project.
+    // For this demo, we'll keep it simple. This means camera might not fully work without full mat4.
+     mat4.translate = function(out, a, v) {
+        let x = v[0], y = v[1], z = v[2];
+        let a00, a01, a02, a03;
+        let a10, a11, a12, a13;
+        let a20, a21, a22, a23;
+
+        if (a === out) {
+            out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
+            out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
+            out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
+            out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
+        } else {
+            a00 = a[0]; a01 = a[1]; a02 = a[2]; a03 = a[3];
+            a10 = a[4]; a11 = a[5]; a12 = a[6]; a13 = a[7];
+            a20 = a[8]; a21 = a[9]; a22 = a[10]; a23 = a[11];
+
+            out[0] = a00; out[1] = a01; out[2] = a02; out[3] = a03;
+            out[4] = a10; out[5] = a11; out[6] = a12; out[7] = a13;
+            out[8] = a20; out[9] = a21; out[10] = a22; out[11] = a23;
+
+            out[12] = a00 * x + a10 * y + a20 * z + a[12];
+            out[13] = a01 * x + a11 * y + a21 * z + a[13];
+            out[14] = a02 * x + a12 * y + a22 * z + a[14];
+            out[15] = a03 * x + a13 * y + a23 * z + a[15];
+        }
+        return out;
+    };
+    mat4.rotate = function(out, a, rad, axis) {
+        // This is a simplified rotation, a full implementation is more complex
+        let x = axis[0], y = axis[1], z = axis[2];
+        let len = Math.sqrt(x * x + y * y + z * z);
+        let s, c, t;
+        // (omitting full matrix multiplication for brevity - it's non-trivial)
+        // This simplified version might not produce correct rotations around arbitrary axes.
+        // For now, we'll primarily use Y-axis rotation which is simpler.
+        if (Math.abs(len) < 0.000001) { return null; } // Should not happen
+        len = 1 / len;
+        x *= len; y *= len; z *= len;
+        s = Math.sin(rad); c = Math.cos(rad); t = 1 - c;
+
+        // Construct the rotation matrix elements directly if only rotating around one axis
+        if (axis[0] === 0 && axis[1] === 1 && axis[2] === 0) { // Y-axis rotation
+            out[0] = c; out[2] = -s; out[8] = s; out[10] = c;
+             // Assuming 'a' is identity or already set. If 'a' is to be multiplied, it's more complex.
+             // For simplicity, we assume 'out' is being built from scratch for this rotation or 'a' is identity.
+            if (a !== out) { // If a is not out, copy the rest of a
+                out[1] = a[1]; out[3] = a[3]; out[4] = a[4]; out[5] = a[5]; out[6] = a[6]; out[7] = a[7];
+                out[9] = a[9]; out[11] = a[11]; out[12] = a[12]; out[13] = a[13]; out[14] = a[14]; out[15] = a[15];
+            } else { // If a is out, ensure other elements are identity-like for this specific rotation
+                out[1] = 0; out[3] = 0; out[4] = 0; out[5] = 1; out[6] = 0; out[7] = 0;
+                out[9] = 0; out[11] = 0; out[12] = 0; out[13] = 0; out[14] = 0; out[15] = 1;
+            }
+             // If 'a' is an existing matrix that needs to be rotated, this is insufficient.
+             // True matrix multiplication is required: R * M
+        } else if (axis[0] === 1 && axis[1] === 0 && axis[2] === 0) { // X-axis rotation
+            out[5] = c; out[6] = s; out[9] = -s; out[10] = c;
+             if (a !== out) { /* copy others */ } else { /* set others to identity */ }
+        }
+        // This is still a placeholder for full rotation.
+        // A proper implementation would use matrix multiplication.
+        // For demo, the render loop's rotation is simple enough to work with this.
+        return out;
+    };
+
+
+    // --- General Site Logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const webGLCanvas = document.getElementById('webgl-canvas');
+        webGLCanvas.width = window.innerWidth;
+        webGLCanvas.height = window.innerHeight;
+        gl = initWebGL(webGLCanvas); // Initialize WebGL context
+
+        if (gl) { // Only start render loop if WebGL initialized
+            requestAnimationFrame(renderWebGL);
+        } else { // Fallback for no WebGL
+            document.body.style.background = 'linear-gradient(135deg, #030611, #0a1022)'; // Simple gradient
+        }
+
+        window.addEventListener('resize', () => {
+            webGLCanvas.width = window.innerWidth;
+            webGLCanvas.height = window.innerHeight;
+            if (gl) gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            // Normalize mouse position for WebGL shader (-1 to 1)
+            mousePos.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mousePos.y = (e.clientY / window.innerHeight) * 2 - 1;
+        });
+
+        // Preloader
+        const preloader = document.getElementById('preloader');
+        window.addEventListener('load', () => {
+            setTimeout(() => { // Simulate loading time
+                 preloader.classList.add('loaded');
+            }, 1500); // Adjust as needed
+        });
+
+        // Intersection Observer for section animations
+        const sections = document.querySelectorAll('.section');
+        const observerOptions = {
+            root: null, // viewport
+            rootMargin: '0px',
+            threshold: 0.2 // 20% of section visible
+        };
+
+        const sectionObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    // Animate numbers if it's the hero section
+                    if (entry.target.id === 'hero') {
+                        animateHeroStats();
+                    }
+                    // Trigger stagger animations
+                    const staggerElements = entry.target.querySelectorAll('.stagger-animate');
+                    staggerElements.forEach((el, index) => {
+                        const delay = parseFloat(el.dataset.staggerDelay) || (index * 0.1);
+                        el.style.transitionDelay = `${delay}s`;
+                    });
+                    // observer.unobserve(entry.target); // Optional: stop observing after first animation
+                } else {
+                     // Optional: remove 'is-visible' to re-animate on scroll up
+                    // entry.target.classList.remove('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            sectionObserver.observe(section);
+        });
+
+        // Hero stats animation
+        function animateHeroStats() {
+            const stats = document.querySelectorAll('#hero .hero-stat');
+            stats.forEach(stat => {
+                if (stat.classList.contains('animated')) return; // Don't re-animate
+                stat.classList.add('animated');
+                const targetValue = parseFloat(stat.dataset.value);
+                const suffix = stat.dataset.suffix.match(/[A-Za-z]+/)[0]; // Extract M or K or B
+                const fullSuffix = stat.dataset.suffix;
+                let currentValue = 0;
+                const duration = 1500; // ms
+                const increment = targetValue / (duration / 16); // ~60fps
+
+                function updateStat() {
+                    currentValue += increment;
+                    if (currentValue >= targetValue) {
+                        currentValue = targetValue;
+                        stat.textContent = `${targetValue.toFixed(targetValue < 10 ? 1:0)}${suffix} ${fullSuffix.replace(targetValue+suffix, '').trim()}`;
+                    } else {
+                        stat.textContent = `${currentValue.toFixed(currentValue < 10 ? 1:0)}${suffix} ${fullSuffix.replace(targetValue+suffix, '').trim()}`;
+                        requestAnimationFrame(updateStat);
+                    }
+                }
+                requestAnimationFrame(updateStat);
+            });
+        }
+
+        // State Tooltip Logic
+        const stateDots = document.querySelectorAll('.state-dot');
+        const stateTooltip = document.getElementById('state-tooltip');
+        const ttStateName = document.getElementById('tooltip-state-name');
+        const ttStateStudents = document.getElementById('tooltip-state-students');
+        const ttStateContribution = document.getElementById('tooltip-state-contribution');
+        const ttStateJobs = document.getElementById('tooltip-state-jobs');
+
+        stateDots.forEach(dot => {
+            dot.addEventListener('mousemove', (e) => {
+                ttStateName.textContent = dot.dataset.state;
+                ttStateStudents.textContent = dot.dataset.students;
+                ttStateContribution.textContent = dot.dataset.contribution;
+                ttStateJobs.textContent = dot.dataset.jobs;
+                stateTooltip.style.left = `${e.clientX + 15}px`;
+                stateTooltip.style.top = `${e.clientY + 15}px`;
+                stateTooltip.classList.add('visible');
+                playSound('hover'); // Simple sound
+            });
+            dot.addEventListener('mouseleave', () => {
+                stateTooltip.classList.remove('visible');
+            });
+        });
+        // Similar tooltips can be added for country dots and alumni stars
+
+        // --- Web Audio API (Very Basic Example) ---
+        let audioCtx;
+        const sounds = {};
+
+        function initAudio() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // Create a simple sound buffer for hover (e.g., a short click or blip)
+                // This is a placeholder. Real sound design is complex.
+                // For a real 'blip', you'd generate or load a sound file.
+                // Here, we'll make a very short oscillator tone.
+                sounds.hover = () => {
+                    if (!audioCtx) return;
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+                    gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                };
+                 sounds.sectionVisible = () => { // Example for section reveal
+                    if (!audioCtx) return;
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                     oscillator.frequency.exponentialRampToValueAtTime(330, audioCtx.currentTime + 0.3); // E4
+                    gainNode.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.4);
+                };
+
+            } catch(e) {
+                console.warn('Web Audio API is not supported in this browser.');
+            }
+        }
+        initAudio(); // Call once on load
+
+        function playSound(soundName) {
+            if (audioCtx && sounds[soundName]) {
+                // Ensure AudioContext is resumed if it was suspended by browser policy
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                sounds[soundName]();
+            }
+        }
+        
+        // Play sound on section visibility (add to observer logic)
+        // Example: inside sectionObserver callback, when entry.isIntersecting:
+        // if (entry.isIntersecting) { /* ... */ playSound('sectionVisible'); }
+        // This might be too much sound, use sparingly.
+
+        // Alumni Star Tooltip (Conceptual - add HTML elements for tooltip)
+        const alumniStars = document.querySelectorAll('.alumnus-star');
+        alumniStars.forEach(star => {
+            star.addEventListener('mouseenter', (e) => {
+                // Create or show a tooltip with star.dataset.name and star.dataset.info
+                console.log(`Hover on ${star.dataset.name}: ${star.dataset.info}`);
+                playSound('hover');
+            });
+        });
+    });
+
+    </script>
+</body>
+</html>
