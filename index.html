@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Minds, Bright Futures: Illuminating America</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&family=Open+Sans:wght@300;400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient-start: #fdfbfb; /* Whiter start */
+            --bg-gradient-end: #ebedee;   /* Light gray end */
+            --text-color-primary: #2c3e50; /* Darker blue-gray */
+            --text-color-secondary: #566573;
+            --accent-primary: #f39c12;  /* Orange - Vibrant Yellow/Orange */
+            --accent-secondary: #1abc9c; /* Turquoise Green */
+            --highlight-color: #e74c3c;  /* Alizarin Crimson - Bright Red */
+            --highlight-blue: #3498db; /* Peter River Blue */
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-shadow: 0 10px 30px rgba(44, 62, 80, 0.1);
+            --card-border-hover: var(--accent-primary);
+            --font-display: 'Montserrat', sans-serif; /* Was Playfair, Montserrat is more versatile for data viz */
+            --font-body: 'Open Sans', sans-serif;
+            --font-quote: 'Playfair Display', serif;
+
+
+            --animation-duration-fast: 0.3s;
+            --animation-duration-medium: 0.6s;
+            --animation-duration-slow: 1s;
+        }
+
+        /* CSS Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-color-primary);
+            overflow-x: hidden;
+            line-height: 1.8; /* Increased for readability */
+        }
+        ::selection {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+
+        #globe-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2; /* Behind particles */
+            opacity: 0.3; /* Subtle */
+            pointer-events: none;
+        }
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .main-container { width: 100%; overflow-y: auto; }
+
+        .section {
+            min-height: 100vh;
+            padding: 100px 5% 60px; /* More bottom padding */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            opacity: 0;
+            transform: translateY(60px);
+            transition: opacity var(--animation-duration-slow) ease-out, transform var(--animation-duration-slow) ease-out;
+        }
+        .section.is-visible { opacity: 1; transform: translateY(0); }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4rem); /* Slightly larger */
+            font-weight: 900; /* Bolder */
+            margin-bottom: 25px;
+            color: var(--text-color-primary); /* Primary text for title */
+            position: relative;
+            display: inline-block;
+            padding-bottom: 15px;
+            letter-spacing: -0.5px;
+        }
+        .section-title .highlight { color: var(--accent-primary); } /* For parts of title */
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0px; /* Start with 0 */
+            height: 5px;
+            background-color: var(--accent-secondary);
+            border-radius: 3px;
+            transition: width var(--animation-duration-medium) ease-in-out 0.3s; /* Delay underline growth */
+        }
+        .section.is-visible .section-title::after { width: 100px; }
+
+        .section-subtitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.5rem); /* Larger subtitle */
+            margin-bottom: 50px; /* More space */
+            max-width: 800px;
+            color: var(--text-color-secondary);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity var(--animation-duration-medium) ease-out 0.4s, transform var(--animation-duration-medium) ease-out 0.4s;
+        }
+        .section.is-visible .section-subtitle { opacity: 1; transform: translateY(0); }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Min width 300px */
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px; /* Wider grid */
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(8px);
+            border-radius: 20px; /* More rounded */
+            padding: 30px; /* More padding */
+            box-shadow: var(--card-shadow);
+            text-align: left;
+            border: 1px solid rgba(0,0,0,0.05); /* Subtle border */
+            transition: transform var(--animation-duration-fast) ease-out, 
+                        box-shadow var(--animation-duration-fast) ease-out,
+                        border-color var(--animation-duration-fast) ease-out;
+            opacity: 0;
+            transform: scale(0.95) translateY(25px);
+        }
+        .section.is-visible .info-card { opacity: 1; transform: scale(1) translateY(0); }
+        .info-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 15px 40px rgba(44, 62, 80, 0.15);
+            border-color: var(--card-border-hover);
+        }
+        .info-card h3 {
+            font-family: var(--font-display);
+            color: var(--accent-secondary);
+            font-size: 1.6rem; margin-bottom: 15px; font-weight: 700;
+        }
+        .info-card p { font-size: 1rem; color: var(--text-color-secondary); margin-bottom: 10px; }
+        .info-card .stat {
+            font-family: var(--font-display); font-size: 2.8rem; font-weight: 700;
+            color: var(--highlight-color); display: block; margin-bottom: 8px;
+        }
+
+        /* Hero Section */
+        #hero { background: transparent; /* Let body gradient show fully */ }
+        #hero .hero-main-title {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 900; color: var(--text-color-primary);
+            margin-bottom: 20px; line-height: 1.15;
+            letter-spacing: -1.5px;
+            /* Shine effect container */
+            position: relative;
+            overflow: hidden; /* For shine */
+            display: inline-block; /* For shine */
+            padding: 5px 0; /* For shine */
+        }
+        .shine-effect::after {
+            content: '';
+            position: absolute;
+            top: -10%; left: -150%; /* Start off-screen */
+            width: 50%; height: 120%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.6) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-25deg);
+            animation: shine 4s infinite 2s; /* Delayed start, repeat */
+        }
+        @keyframes shine {
+            0% { left: -150%; }
+            25% { left: 150%; } /* Pass through */
+            100% { left: 150%; } /* Stay off for a while */
+        }
+
+        #hero .hero-key-stats {
+            display: flex; justify-content: center; gap: 30px;
+            margin-top: 35px; flex-wrap: wrap;
+        }
+        .hero-stat-item {
+            background: rgba(255,255,255,0.8);
+            padding: 18px 30px; border-radius: 12px; /* Rounded rectangle */
+            font-size: 1.15rem; font-weight: 600; color: var(--text-color-primary);
+            box-shadow: 0 5px 20px rgba(44,62,80,0.08);
+            opacity: 0; transform: translateY(25px) scale(0.9);
+            animation: popUp var(--animation-duration-medium) forwards;
+            cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hero-stat-item:hover {
+             transform: translateY(-5px) scale(1.05) !important; /* Override stagger animation */
+             box-shadow: 0 8px 25px rgba(44,62,80,0.12);
+        }
+        .hero-stat-item .value { color: var(--highlight-blue); font-weight: 700; font-size: 1.35em; }
+
+        .scroll-prompt {
+            /* Styles from before, ensure visibility */
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            font-size: 0.9rem; color: var(--text-color-secondary);
+            opacity: 0; animation: fadeIn var(--animation-duration-slow) 2.5s forwards;
+        }
+        .scroll-prompt .arrow {
+            display: block; margin: 8px auto 0; width: 22px; height: 22px;
+            border-left: 2px solid var(--accent-primary);
+            border-bottom: 2px solid var(--accent-primary);
+            transform: rotate(-45deg); animation: bounceArrow 1.8s infinite;
+        }
+
+        /* Economic Nourishment - SVG US Map */
+        #us-map-container {
+            width: 100%; max-width: 700px; margin: 40px auto;
+            padding: 20px; border-radius: 20px; background: var(--card-bg);
+            box-shadow: var(--card-shadow);
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+        }
+        .section.is-visible #us-map-container { opacity: 1; transform: translateY(0); }
+
+        #us-map-svg { width: 100%; height: auto; }
+        #us-map-svg path {
+            fill: #d1d8e0; /* Light gray for states */
+            stroke: #a5b1c2; /* Darker gray border */
+            stroke-width: 0.5;
+            transition: fill 0.2s ease;
+            cursor: pointer;
+        }
+        #us-map-svg path:hover, #us-map-svg path.active {
+            fill: var(--accent-secondary); /* Teal on hover/active */
+        }
+        #state-details-tooltip {
+            /* Styles from before */
+            border: 1px solid var(--accent-secondary);
+            box-shadow: 0 6px 25px rgba(32,201,151,0.3);
+        }
+
+
+        /* Garden of Cultures - Bar Chart */
+        .origins-chart-container {
+            width: 100%; max-width: 700px; margin: 30px auto;
+            padding: 30px; border-radius: 20px; background: var(--card-bg);
+            box-shadow: var(--card-shadow);
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+        }
+        .section.is-visible .origins-chart-container { opacity: 1; transform: translateY(0); }
+        .bar-chart-title { font-family: var(--font-display); font-size: 1.4rem; margin-bottom: 20px; color: var(--text-color-primary); }
+        .chart-bar {
+            display: flex; align-items: center; margin-bottom: 12px;
+        }
+        .chart-bar .label {
+            width: 100px; font-size: 0.9rem; color: var(--text-color-secondary); text-align: right; margin-right: 10px;
+        }
+        .chart-bar .bar-wrapper {
+            flex-grow: 1; background-color: #e9ecef; border-radius: 5px; height: 25px; overflow: hidden;
+        }
+        .chart-bar .bar {
+            height: 100%; width: 0; /* Initial width 0 for animation */
+            background-color: var(--accent-primary);
+            border-radius: 5px;
+            transition: width 1s ease-out;
+            text-align: right; padding-right: 8px; line-height: 25px;
+            font-size: 0.8rem; color: white; font-weight: 600;
+        }
+        .section.is-visible .chart-bar .bar { /* JS will set actual width */ }
+
+        /* Cultivating Innovation - Donut Chart Placeholder */
+        .donut-chart-placeholder {
+            width: 300px; height: 300px; border-radius: 50%;
+            border: 15px solid var(--highlight-blue); /* Outer ring */
+            border-left-color: var(--accent-secondary); /* Different segment */
+            border-top-color: var(--accent-primary); /* Another segment */
+            margin: 30px auto; display: flex; justify-content: center; align-items: center;
+            font-family: var(--font-display); font-size: 1.2rem; color: var(--text-color-primary);
+            animation: spinDonut 1.5s ease-out;
+            position: relative;
+        }
+        .donut-chart-placeholder .center-text {
+            background: white; padding: 20px; border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        @keyframes spinDonut { from { transform: rotate(-90deg); opacity: 0; } to { transform: rotate(0deg); opacity: 1; } }
+
+
+        /* Quotes */
+        .quote-block {
+            font-family: var(--font-quote);
+            font-size: clamp(1.3rem, 3vw, 1.8rem);
+            color: var(--text-color-secondary);
+            font-style: italic;
+            line-height: 1.6;
+            margin: 40px auto; padding: 20px 30px;
+            max-width: 700px; text-align: center;
+            border-left: 5px solid var(--accent-primary);
+            background: rgba(255,255,255,0.5);
+            border-radius: 0 10px 10px 0;
+            position: relative;
+        }
+        .quote-block::before { /* Quotation mark */
+            content: '“';
+            font-family: var(--font-quote);
+            font-size: 4rem;
+            color: var(--accent-primary);
+            opacity: 0.5;
+            position: absolute;
+            top: -10px; left: 5px;
+        }
+        .quote-block cite {
+            display: block;
+            text-align: right;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text-color-primary);
+            margin-top: 15px;
+            font-style: normal;
+        }
+
+        /* Footer */
+        #footer { /* Styles from before */ }
+
+    </style>
+</head>
+<body>
+    <canvas id="globe-canvas"></canvas>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="main-container">
+        <section id="hero" class="section">
+            <h1 class="hero-main-title section-title shine-effect">Global Minds, <span class="highlight">Bright</span> Futures</h1>
+            <p class="section-subtitle">Unveiling the profound impact of international students on America's economy, innovation, and cultural tapestry.</p>
+            <div class="hero-key-stats">
+                <div class="hero-stat-item"><span class="value" data-target="40.1">0</span>B Economic Boost (22-23)</div>
+                <div class="hero-stat-item"><span class="value" data-target="1.05" data-decimals="2">0</span>M+ Students (22-23)</div>
+                <div class="hero-stat-item"><span class="value" data-target="368">0</span>K Jobs Supported (22-23)</div>
+            </div>
+            <div class="scroll-prompt">Scroll to discover <span class="arrow"></span></div>
+        </section>
+
+        <section id="economic-nourishment" class="section">
+            <h2 class="section-title">Nourishing the <span class="highlight">Nation's</span> Economy</h2>
+            <p class="section-subtitle">International students are a vital economic force, contributing billions annually and supporting hundreds of thousands of jobs across the United States.</p>
+            
+            <div id="us-map-container">
+                <h3 class="bar-chart-title">State-by-State Impact (Hover over a state)</h3>
+                <!-- Simplified US SVG - for a real project, use a detailed, optimized one -->
+                <svg id="us-map-svg" viewBox="0 0 960 600">
+                    <!-- Add actual SVG <path> data for states here. This is a placeholder. -->
+                    <!-- Example for California (highly simplified path) -->
+                    <path id="CA" data-state="California" data-students="138,393" data-contribution="$5.7 Billion" data-jobs="55,627"
+                          d="M112,393 C62,311 39,280 57,248 C75,216 100,203 123,203 C131,203 141,208 147,214 C162,230 155,248 161,268 C174,307 184,341 184,356 C184,383 161,408 133,424 C123,429 118,422 112,393z" />
+                    <path id="TX" data-state="Texas" data-students="75,568" data-contribution="$2.2 Billion" data-jobs="22,853"
+                          d="M380,470 C350,450 340,420 360,380 C380,340 450,350 480,380 C510,410 480,480 430,500 C400,510 390,490 380,470z" />
+                    <path id="NY" data-state="New York" data-students="126,782" data-contribution="$5.0 Billion" data-jobs="48,369"
+                          d="M740,200 C720,180 730,150 760,140 C790,130 820,160 810,190 C800,220 760,230 740,200z" />
+                    <path id="FL" data-state="Florida" data-students="47,014" data-contribution="$1.7 Billion" data-jobs="16,524"
+                          d="M700,480 C680,450 720,420 750,430 C780,440 770,490 730,500 C710,505 710,495 700,480z" />
+                    <path id="MA" data-state="Massachusetts" data-students="79,751" data-contribution="$3.5 Billion" data-jobs="33,451"
+                          d="M790,180 C780,170 790,155 810,150 C830,145 840,165 830,180 C820,195 800,190 790,180z" />
+                     <path id="IL" data-state="Illinois" data-students="55,069" data-contribution="$1.9 Billion" data-jobs="18,847"
+                          d="M530,280 C510,260 520,230 550,220 C580,210 610,240 600,270 C590,300 550,310 530,280z" />
+                    <!-- Add more states. For a full map, you'd use a GeoJSON converter or existing SVG map. -->
+                    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="var(--font-body)" font-size="20" fill="#aaa">Simplified US Map - Add Full SVG Paths</text>
+                </svg>
+            </div>
+            <div id="state-details-tooltip">
+                <h4 id="tooltip-state-name"></h4>
+                <p>Students: <strong id="tooltip-state-students"></strong></p>
+                <p>Contribution: <strong id="tooltip-state-contribution"></strong></p>
+                <p>Jobs Supported: <strong id="tooltip-state-jobs"></strong></p>
+            </div>
+            <div class="content-grid" style="margin-top: 50px;">
+                 <div class="info-card"><h3>Beyond Tuition</h3><p>Spending on living costs, travel, and local services creates a powerful economic multiplier effect.</p></div>
+                 <div class="info-card"><h3>Job Multiplier</h3><p>For every 7 international students, approximately 3 U.S. jobs are created or supported by their spending.</p></div>
+            </div>
+        </section>
+
+        <section id="garden-of-cultures" class="section">
+            <h2 class="section-title">A Global <span class="highlight">Garden</span> of Cultures</h2>
+            <p class="section-subtitle">Students from over 200 countries bring diverse perspectives, enriching U.S. campuses and fostering a more interconnected world.</p>
+            <div class="origins-chart-container">
+                <h3 class="bar-chart-title">Top Sending Countries (2022-2023)</h3>
+                <div class="chart-bar" data-value="289526" data-label="China" data-max="300000">
+                    <div class="label">China</div><div class="bar-wrapper"><div class="bar"></div></div>
+                </div>
+                <div class="chart-bar" data-value="268923" data-label="India" data-max="300000">
+                    <div class="label">India</div><div class="bar-wrapper"><div class="bar"></div></div>
+                </div>
+                <div class="chart-bar" data-value="43847" data-label="S. Korea" data-max="300000">
+                    <div class="label">S. Korea</div><div class="bar-wrapper"><div class="bar"></div></div>
+                </div>
+                <div class="chart-bar" data-value="27876" data-label="Canada" data-max="300000">
+                    <div class="label">Canada</div><div class="bar-wrapper"><div class="bar"></div></div>
+                </div>
+                 <div class="chart-bar" data-value="21900" data-label="Vietnam" data-max="300000">
+                    <div class="label">Vietnam</div><div class="bar-wrapper"><div class="bar"></div></div>
+                </div>
+            </div>
+            <div class="quote-block">
+                International exchange deepens understanding, cultivates empathy, and builds bridges between nations.
+                <cite>Educational Exchange Advocate</cite>
+            </div>
+        </section>
+
+        <section id="cultivating-innovation" class="section">
+            <h2 class="section-title">Cultivating <span class="highlight">Innovation</span></h2>
+            <p class="section-subtitle">A significant majority of international students pursue STEM fields, driving research, technological advancement, and U.S. competitiveness.</p>
+            <div class="content-grid">
+                <div class="info-card">
+                    <div class="donut-chart-placeholder">
+                        <div class="center-text"><strong>55%+</strong><br>in STEM</div>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <h3>Top STEM Fields</h3>
+                    <p><span class="stat">1.</span> Math & Computer Science (24.0%)</p>
+                    <p><span class="stat">2.</span> Engineering (20.2%)</p>
+                    <p>These students are at the forefront of AI, biotech, clean energy, and more.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="harvest-of-talent" class="section">
+            <h2 class="section-title">The <span class="highlight">Harvest</span> of Talent</h2>
+            <p class="section-subtitle">Many international alumni leverage their U.S. education to become groundbreaking entrepreneurs, scientists, and leaders, both in the U.S. and globally.</p>
+            <div class="content-grid">
+                <div class="info-card alumni-showcase">
+                    <h3>Founders of "Unicorns"</h3>
+                    <p class="quote">"More than half (55%) of America’s $1 billion startup companies (unicorns) have at least one immigrant founder. Many of these founders initially came to the U.S. as international students."
+                    <cite>National Foundation for American Policy, 2022</cite></p>
+                </div>
+                <div class="info-card alumni-showcase">
+                    <h3>Nobel Laureates & Innovators</h3>
+                    <p>Immigrants, many former international students, have won a disproportionately high number of U.S. Nobel Prizes in science and economics, underscoring their contribution to American intellectual capital.</p>
+                </div>
+                 <div class="info-card alumni-showcase">
+                    <h3>Global Leadership</h3>
+                    <p>Alumni return home with valuable skills and positive impressions of the U.S., becoming leaders in their fields and strengthening international ties (soft power).</p>
+                </div>
+            </div>
+        </section>
+
+         <section id="challenges" class="section">
+            <h2 class="section-title">Nurturing the <span class="highlight">Growth</span></h2>
+            <p class="section-subtitle">Sustaining this vital flow of talent requires a welcoming environment, streamlined processes, and recognition of international students as invaluable assets.</p>
+            <div class="content-grid">
+                <div class="info-card"><h3>Global Competition</h3><p>The race for global talent is fierce. The U.S. must actively promote itself as a top destination.</p></div>
+                <div class="info-card"><h3>Visa & Immigration Policies</h3><p>Clear, efficient, and welcoming visa processes are crucial for attracting and retaining students.</p></div>
+                <div class="info-card"><h3>Support Systems</h3><p>Robust support services for international students enhance their experience and success.</p></div>
+            </div>
+            <div class="quote-block">
+                "America is shooting itself in the foot big time [by creating uncertainty]."
+                <cite>Nicholas Barr, London School of Economics (paraphrased from original article)</cite>
+            </div>
+        </section>
+
+        <footer id="footer">
+            <p>This interactive report celebrates the invaluable contributions of international students to the United States.</p>
+            <p>Data primarily sourced from NAFSA, IIE Open Doors, NFAP. Design & Development: AI-Powered Experience.</p>
+            <p><a href="#hero">Back to Top</a> | Inspired by the goal of powerful data storytelling.</p>
+        </footer>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Globe Canvas (Conceptual - very basic) ---
+        const globeCanvas = document.getElementById('globe-canvas');
+        const globeCtx = globeCanvas.getContext('2d');
+        let globeRotation = 0;
+
+        function resizeGlobeCanvas() {
+            globeCanvas.width = window.innerWidth;
+            globeCanvas.height = window.innerHeight;
+        }
+        resizeGlobeCanvas();
+        window.addEventListener('resize', resizeGlobeCanvas);
+        
+        function drawGlobe() { // Highly simplified
+            globeCtx.clearRect(0, 0, globeCanvas.width, globeCanvas.height);
+            globeCtx.save();
+            globeCtx.translate(globeCanvas.width / 2, globeCanvas.height / 2);
+            globeCtx.rotate(globeRotation);
+
+            // Simple circle for Earth
+            globeCtx.beginPath();
+            globeCtx.arc(0, 0, Math.min(globeCanvas.width, globeCanvas.height) * 0.25, 0, Math.PI * 2);
+            globeCtx.strokeStyle = 'rgba(32, 201, 151, 0.3)'; // --accent-secondary with alpha
+            globeCtx.lineWidth = 2;
+            globeCtx.stroke();
+
+            // "Continents" - very abstract
+            for(let i = 0; i < 5; i++) {
+                globeCtx.beginPath();
+                globeCtx.ellipse(
+                    Math.cos(i * Math.PI * 2 / 5 + globeRotation * 2) * 80, // Move with rotation
+                    Math.sin(i * Math.PI * 2 / 5 - globeRotation) * 40,
+                    Math.random() * 30 + 20, Math.random() * 20 + 10,
+                    Math.random() * Math.PI * 2, 0, Math.PI * 2
+                );
+                globeCtx.fillStyle = `rgba(243, 156, 18, ${Math.random() * 0.2 + 0.1})`; // --accent-primary with alpha
+                globeCtx.fill();
+            }
+            globeCtx.restore();
+            globeRotation += 0.0005; // Slow rotation
+        }
+
+        // --- Particle Canvas (from previous, slightly adjusted) ---
+        const particleCanvas = document.getElementById('particle-canvas');
+        const particleCtx = particleCanvas.getContext('2d');
+        let particlesArray = [];
+        const numParticles = 80;
+
+        function resizeParticleCanvas() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+        }
+        resizeParticleCanvas();
+        window.addEventListener('resize', resizeParticleCanvas);
+        
+        const mouse = { x: undefined, y: undefined, radius: 120 };
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.clientX;
+            mouse.y = event.clientY;
+        });
+        window.addEventListener('mouseleave', () => {
+            mouse.x = undefined; mouse.y = undefined;
+        });
+
+        class Particle { /* ... (Particle class from previous, can be adjusted) ... */ 
+             constructor(x, y, size, color, weight) {
+                this.x = x; this.y = y; this.size = size; this.color = color; this.weight = weight;
+                this.baseX = this.x; this.baseY = this.y; this.density = Math.random() * 20 + 5;
+            }
+            draw() {
+                particleCtx.beginPath();
+                particleCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                particleCtx.fillStyle = this.color; particleCtx.fill();
+            }
+            update() {
+                let dxMouse = mouse.x - this.x;
+                let dyMouse = mouse.y - this.y;
+                let distanceMouse = Math.sqrt(dxMouse*dxMouse + dyMouse*dyMouse);
+
+                if (mouse.x !== undefined && distanceMouse < mouse.radius + this.size) {
+                    let forceDirectionX = dxMouse / distanceMouse;
+                    let forceDirectionY = dyMouse / distanceMouse;
+                    let maxDistance = mouse.radius;
+                    let force = (maxDistance - distanceMouse) / maxDistance;
+                    let directionX = forceDirectionX * force * this.density * 0.2; // Softer repulsion
+                    let directionY = forceDirectionY * force * this.density * 0.2;
+                    this.x -= directionX; this.y -= directionY;
+                } else {
+                    if (this.x !== this.baseX) { this.x -= (this.x - this.baseX) / 20; }
+                    if (this.y !== this.baseY) { this.y -= (this.y - this.baseY) / 20; }
+                }
+                 // Gentle drift
+                this.x += (Math.random() - 0.5) * 0.2;
+                this.y += (Math.random() - 0.5) * 0.2;
+
+                if (this.x > particleCanvas.width + this.size) this.x = -this.size;
+                if (this.x < -this.size) this.x = particleCanvas.width + this.size;
+                if (this.y > particleCanvas.height + this.size) this.y = -this.size;
+                if (this.y < -this.size) this.y = particleCanvas.height + this.size;
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            const colors = ['rgba(243,156,18,0.6)', 'rgba(26,188,156,0.6)', 'rgba(52,152,219,0.5)'];
+            for (let i = 0; i < numParticles; i++) {
+                let size = Math.random() * 3 + 1.5;
+                let x = Math.random() * particleCanvas.width;
+                let y = Math.random() * particleCanvas.height;
+                let color = colors[Math.floor(Math.random() * colors.length)];
+                let weight = Math.random() * 1 + 0.5;
+                particlesArray.push(new Particle(x, y, size, color, weight));
+            }
+        }
+        initParticles();
+
+        function animateBackgrounds() {
+            drawGlobe(); // Draw globe first
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+            requestAnimationFrame(animateBackgrounds);
+        }
+        animateBackgrounds();
+
+        // --- General Site Logic & Intersection Observer ---
+        const sections = document.querySelectorAll('.section');
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.1 }; // Lower threshold for earlier trigger
+
+        const sectionObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    const animatedElements = entry.target.querySelectorAll('.info-card, .spending-item, .hero-stat-item');
+                    animatedElements.forEach((el, index) => {
+                        el.style.transitionDelay = `${index * 0.08}s`; // Faster stagger
+                    });
+
+                    if (entry.target.id === 'hero') animateHeroNumbers();
+                    if (entry.target.id === 'garden-of-cultures') animateBarChart();
+                    
+                    // Dynamic globe based on section (conceptual)
+                    if (entry.target.id === 'garden-of-cultures') {
+                        // globeCtx.strokeStyle = 'rgba(231, 76, 60, 0.5)'; // Change globe color
+                    } else if (entry.target.id === 'economic-nourishment') {
+                        // globeCtx.strokeStyle = 'rgba(52, 152, 219, 0.5)';
+                    } else {
+                        // globeCtx.strokeStyle = 'rgba(26, 188, 156, 0.3)'; // Default
+                    }
+
+                    // observer.unobserve(entry.target); // Animate only once
+                } else {
+                    // entry.target.classList.remove('is-visible'); // Re-animate on scroll up
+                }
+            });
+        }, observerOptions);
+        sections.forEach(section => sectionObserver.observe(section));
+
+        // Animate Hero Numbers (from previous)
+        function animateHeroNumbers() { /* ... (same as before) ... */
+            const valueElements = document.querySelectorAll('#hero .hero-stat-item .value');
+            valueElements.forEach(el => {
+                if (el.classList.contains('animated')) return;
+                el.classList.add('animated');
+
+                const target = parseFloat(el.dataset.target);
+                const decimals = parseInt(el.dataset.decimals) || 0;
+                let current = 0; const duration = 1200; const steps = 50;
+                const increment = target / steps; const stepDuration = duration / steps;
+                let stepCount = 0;
+                const timer = setInterval(() => {
+                    current += increment; stepCount++;
+                    if (stepCount >= steps || current >= target) {
+                        clearInterval(timer); current = target;
+                    }
+                    el.textContent = current.toFixed(decimals);
+                }, stepDuration);
+            });
+        }
+
+        // Animate Bar Chart
+        function animateBarChart() {
+            const chartBars = document.querySelectorAll('#garden-of-cultures .chart-bar');
+            chartBars.forEach(chartBar => {
+                const barEl = chartBar.querySelector('.bar');
+                if (barEl.classList.contains('animated')) return;
+                barEl.classList.add('animated');
+
+                const value = parseInt(chartBar.dataset.value);
+                const maxValue = parseInt(chartBar.dataset.max);
+                const percentage = (value / maxValue) * 100;
+                barEl.style.width = `${percentage}%`;
+                barEl.textContent = value.toLocaleString(); // Format number
+            });
+        }
+        
+        // --- SVG US Map Interaction ---
+        const svgMap = document.getElementById('us-map-svg');
+        const mapPaths = svgMap.querySelectorAll('path');
+        const tooltip = document.getElementById('state-details-tooltip');
+        const ttStateName = document.getElementById('tooltip-state-name');
+        const ttStateStudents = document.getElementById('tooltip-state-students');
+        const ttStateContribution = document.getElementById('tooltip-state-contribution');
+        const ttStateJobs = document.getElementById('tooltip-state-jobs');
+
+        mapPaths.forEach(path => {
+            path.addEventListener('mousemove', (e) => {
+                mapPaths.forEach(p => p.classList.remove('active')); // Clear other active states
+                path.classList.add('active');
+
+                ttStateName.textContent = path.dataset.state || 'N/A';
+                ttStateStudents.textContent = path.dataset.students || 'N/A';
+                ttStateContribution.textContent = path.dataset.contribution || 'N/A';
+                ttStateJobs.textContent = path.dataset.jobs || 'N/A';
+                
+                let x = e.clientX + 20;
+                let y = e.clientY - tooltip.offsetHeight / 2; // Center vertically
+                if (x + tooltip.offsetWidth > window.innerWidth - 20) {
+                    x = e.clientX - tooltip.offsetWidth - 20;
+                }
+                // Prevent tooltip from going off top/bottom
+                if (y < 10) y = 10;
+                if (y + tooltip.offsetHeight > window.innerHeight - 10) {
+                    y = window.innerHeight - tooltip.offsetHeight - 10;
+                }
+
+                tooltip.style.left = `${x}px`;
+                tooltip.style.top = `${y}px`;
+                tooltip.classList.add('visible');
+                playSound('hoverSubtle');
+            });
+            path.addEventListener('mouseleave', () => {
+                path.classList.remove('active');
+                tooltip.classList.remove('visible');
+            });
+             path.addEventListener('click', () => { // Example click interaction
+                playSound('click');
+                // Could pin tooltip or show more details
+            });
+        });
+
+        // --- Web Audio API (More nuanced sounds) ---
+        let audioCtx;
+        const sounds = {};
+        function initAudio() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                sounds.click = () => { /* ... (from previous, maybe adjust frequency/duration) ... */
+                    if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination); o.type = 'triangle';
+                    o.frequency.setValueAtTime(523.25, audioCtx.currentTime); /* C5 */
+                    g.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+                    o.start(); o.stop(audioCtx.currentTime + 0.2);
+                };
+                sounds.hoverSubtle = () => {
+                    if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination); o.type = 'sine';
+                    o.frequency.setValueAtTime(880, audioCtx.currentTime); /* A5 */
+                    g.gain.setValueAtTime(0.015, audioCtx.currentTime); // Very subtle
+                    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+                    o.start(); o.stop(audioCtx.currentTime + 0.1);
+                };
+                 sounds.sectionReveal = () => { // Gentle swell
+                    if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination); o.type = 'sine';
+                    o.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                    g.gain.setValueAtTime(0, audioCtx.currentTime);
+                    g.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.3);
+                    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.6);
+                    o.start(); o.stop(audioCtx.currentTime + 0.6);
+                };
+                // Add to IntersectionObserver: if (entry.isIntersecting && !entry.target.classList.contains('sound-played')) { playSound('sectionReveal'); entry.target.classList.add('sound-played'); }
+
+            } catch(e) { console.warn('Web Audio API not supported.'); }
+        }
+        initAudio();
+        function playSound(soundName) {
+            if (audioCtx && sounds[soundName]) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                sounds[soundName]();
+            }
+        }
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetElement = document.querySelector(this.getAttribute('href'));
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+    });
+    </script>
+</body>
+</html>
